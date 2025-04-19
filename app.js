@@ -2,11 +2,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); // Import CORS middleware
 const authRoutes = require('./routes/authRoutes');
+const userTextRoutes = require('./routes/userTextRoutes'); // Assuming you have userTextRoutes defined
+const profileRoutes = require('./routes/profileRoutes');
 const { sequelize } = require('./config/db');
-const Users = require('./models/Users');
-const OTP = require('./models/OTP');
-const Token = require('./models/Token');
-const PasswordReset = require('./models/PasswordReset');
+const Users = require('./models/postgres/Users');
+const OTP = require('./models/postgres/OTP');
+const Token = require('./models/postgres/Token');
+const PasswordReset = require('./models/postgres/PasswordReset');
 
 (async () => {
     try {
@@ -22,18 +24,20 @@ const app = express();
 
 // ✅ Enable CORS for frontend requests
 const corsOptions = {
-    origin: ["http://localhost:3000"], // Change this to your frontend URL
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
-    credentials: true, // Allow cookies & authentication headers
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
 };
 app.use(cors(corsOptions));
 
 // ✅ Middleware
-app.use(bodyParser.json()); // Parse incoming JSON requests
+app.use(express.json()); // Parse incoming JSON requests
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/usertext', userTextRoutes); // Assuming you have userTextRoutes defined
+app.use('/api/profile', profileRoutes);
 app.get('/test', (req, res) => {
     res.send("hello");
 });

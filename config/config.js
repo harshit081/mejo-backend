@@ -11,4 +11,7 @@ module.exports = {
     },
     jwtSecret: process.env.JWT_SECRET,
     port: process.env.PORT || 5000,
+    mongodb: {
+        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/mejo_content'
+    },
 };

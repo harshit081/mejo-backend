@@ -1,13 +1,16 @@
-    const authService = require('../services/authService');
+const authService = require('../services/authService');
 
     const signUp = async (req, res) => {
         try {
             const { email, password } = req.body;
-            console.log(email,password)
-            const { user, token } = await authService.signUp(email, password);
-            res.status(201).json({ user, token });
+            const result = await authService.signUp(email, password);
+            res.status(201).json(result);
         } catch (error) {
-            res.status(400).json({ message: error.message });
+            if (error.message === 'Failed to create user profile') {
+                res.status(500).json({ message: 'Registration failed. Please try again.' });
+            } else {
+                res.status(400).json({ message: error.message });
+            }
         }
     };
 

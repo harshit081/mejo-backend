@@ -1,7 +1,8 @@
+// models/OTP.js
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db'); // Import the sequelize instance
+const { sequelize } = require('../../config/db'); // Fix path
 
-const Token = sequelize.define('tokens', {
+const OTP = sequelize.define('otp', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -10,8 +11,12 @@ const Token = sequelize.define('tokens', {
     userid: {
         type: DataTypes.UUID,
         allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id',
+        },
     },
-    token: {
+    otp: {
         type: DataTypes.STRING,
         allowNull: false,
     },
@@ -19,9 +24,12 @@ const Token = sequelize.define('tokens', {
         type: DataTypes.DATE,
         allowNull: false,
     },
+    verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
 }, {
-    timestamps: true, // Adds createdAt and updatedAt fields
-    tableName: 'tokens', // Explicitly specify table name
+    tableName: 'otp',
 });
 
-module.exports = Token;
+module.exports = OTP;

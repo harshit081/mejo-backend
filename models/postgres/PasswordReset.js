@@ -1,8 +1,8 @@
-// models/OTP.js
+// models/PasswordReset.js
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../config/db');
+const { sequelize } = require('../../config/db');  // Fix path
 
-const OTP = sequelize.define('otp', {
+const PasswordReset = sequelize.define('password_resets', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -16,7 +16,7 @@ const OTP = sequelize.define('otp', {
             key: 'id',
         },
     },
-    otp: {
+    resetToken: {
         type: DataTypes.STRING,
         allowNull: false,
     },
@@ -24,13 +24,6 @@ const OTP = sequelize.define('otp', {
         type: DataTypes.DATE,
         allowNull: false,
     },
-    verified: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-    },
-},{
-    tableName: 'otp',
-    
 });
 
-module.exports = OTP;
+module.exports = PasswordReset;

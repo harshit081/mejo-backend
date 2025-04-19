@@ -1,8 +1,7 @@
-// models/PasswordReset.js
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../config/db');
+const { sequelize } = require('../../config/db'); // Fix path
 
-const PasswordReset = sequelize.define('password_resets', {
+const Token = sequelize.define('tokens', {
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -11,12 +10,8 @@ const PasswordReset = sequelize.define('password_resets', {
     userid: {
         type: DataTypes.UUID,
         allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id',
-        },
     },
-    resetToken: {
+    token: {
         type: DataTypes.STRING,
         allowNull: false,
     },
@@ -24,6 +19,9 @@ const PasswordReset = sequelize.define('password_resets', {
         type: DataTypes.DATE,
         allowNull: false,
     },
+}, {
+    timestamps: true, // Adds createdAt and updatedAt fields
+    tableName: 'tokens', // Explicitly specify table name
 });
 
-module.exports = PasswordReset;
+module.exports = Token;

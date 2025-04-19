@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db'); // Import the sequelize instance
+const { sequelize } = require('../../config/db'); // Fix path
 
 const Users = sequelize.define('users', {
     id: {

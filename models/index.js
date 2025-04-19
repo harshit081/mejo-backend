@@ -1,20 +1,40 @@
 const { sequelize } = require('../config/db');
-const Users = require('./Users');
-const OTP = require('./OTP');
-const Token = require('./Token');
-const PasswordReset = require('./PasswordReset');
+const Users = require('./postgres/Users');
+const OTP = require('./postgres/OTP');
+const Token = require('./postgres/Token');
+const PasswordReset = require('./postgres/PasswordReset');
 
-// Define associations (if any)
-OTP.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
-Users.hasMany(OTP, { foreignKey: 'id' });
+// Define associations with proper foreign key references
+OTP.belongsTo(Users, { 
+    foreignKey: { 
+        name: 'userid',
+        type: sequelize.Sequelize.UUID,
+        allowNull: false 
+    }, 
+    onDelete: 'CASCADE' 
+});
+Users.hasMany(OTP, { foreignKey: 'userid' });
 
-Token.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
-Users.hasMany(Token, { foreignKey: 'id' });
+Token.belongsTo(Users, { 
+    foreignKey: { 
+        name: 'userid',
+        type: sequelize.Sequelize.UUID,
+        allowNull: false 
+    }, 
+    onDelete: 'CASCADE' 
+});
+Users.hasMany(Token, { foreignKey: 'userid' });
 
-PasswordReset.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
-Users.hasMany(PasswordReset, { foreignKey: 'id' });
+PasswordReset.belongsTo(Users, { 
+    foreignKey: { 
+        name: 'userid',
+        type: sequelize.Sequelize.UUID,
+        allowNull: false 
+    }, 
+    onDelete: 'CASCADE' 
+});
+Users.hasMany(PasswordReset, { foreignKey: 'userid' });
 
-// Export models and sequelize
 module.exports = {
     sequelize,
     Users,

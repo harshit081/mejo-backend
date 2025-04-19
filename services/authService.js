@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');  // Add this import
 const { Users, Token, OTP, PasswordReset } = require('../models');
 const sendEmail = require('../config/nodemailer');
+const UserProfile = require('../models/mongo/UserProfile');
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -21,6 +22,31 @@ const signUp = async (email, password) => {
         password: hashedPassword,
         isVerified: false
     });
+
+    // Create initial UserProfile in MongoDB
+    try {
+        await UserProfile.create({
+            userId: newUser.id,
+            email: email.toLowerCase(),
+            firstName: null,
+            lastName: null,
+            dateOfBirth: null,
+            gender: 'prefer not to say',
+            phoneNumber: null,
+            address: {
+                street: null,
+                city: null,
+                state: null,
+                country: null,
+                zipCode: null
+            },
+            bio: null
+        });
+    } catch (error) {
+        // If MongoDB profile creation fails, delete the PostgreSQL user
+        await newUser.destroy();
+        throw new Error('Failed to create user profile');
+    }
 
     // Generate and send OTP for email verification
     await generateOTP(email);
