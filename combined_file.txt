@@ -1,0 +1,468 @@
+const app = require('./app');
+const { sequelize } = require('./config/db');
+require('dotenv').config();
+
+const config = require('./config/config');
+
+
+const PORT = config.PORT || 5000;
+
+sequelize.sync().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+});
+const express = require('express');
+const bodyParser = require('body-parser');
+const authRoutes = require('./routes/authRoutes');
+
+const { sequelize } = require('./config/db');
+const Users = require('./models/Users');
+const OTP = require('./models/OTP');
+const Token = require('./models/Token');
+const PasswordReset = require('./models/PasswordReset');
+
+(async () => {
+    try {
+        // Synchronize all models
+        await sequelize.sync({ force: false, alter: true }); // Use `{ force: true }` to drop and recreate tables
+        console.log("All models were synchronized successfully.");
+    } catch (error) {
+        console.error("Unable to sync the database:", error);
+    }
+})();
+
+const app = express();
+
+app.use(bodyParser.json()); // Parse incoming JSON requests
+
+app.use('/api/auth', authRoutes);
+app.get('/test',(req,res)=>{
+    res.send("hello")
+})
+
+module.exports = app;
+require('dotenv').config();
+console.log(process.env.DB_HOST)
+module.exports = {
+    email_user: process.env.EMAIL_USER,
+    email_password: process.env.EMAIL_PASSWORD,
+    db: {
+        name: process.env.DB_NAME,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+    },
+    jwtSecret: process.env.JWT_SECRET,
+    port: process.env.PORT || 5000,
+};
+const { Sequelize } = require("sequelize");
+const config = require("./config");
+// Create a Sequelize instance and connect to PostgreSQL
+const sequelize = new Sequelize(
+    config.db.name, // Database name
+    config.db.user, // Database user
+    config.db.password, // Database password
+    {
+        host: config.db.host, // Host (usually localhost)
+        dialect: "postgres", // Database type
+        logging: false, //
+    }
+);
+
+console.log("here", config);
+// Test the connection
+sequelize
+    .authenticate()
+    .then(() => {
+        console.log("Database connection established successfully.");
+    })
+    .catch((error) => {
+        console.error("Unable to connect to the database:", error);
+    });
+
+
+
+module.exports = { sequelize };
+const nodemailer = require('nodemailer');
+const config = require('./config');
+// Configure the transporter with your email service credentials
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // Use your email service (e.g., Gmail, Outlook, etc.)
+    auth: {
+        user: config.email_user, // Your email address
+        pass: config.email_password, // Your email password or app password
+    },
+});
+
+console.log(config.email_user,config.email_password)
+
+// Function to send email
+const sendEmail = async (to, subject, text) => {
+    const mailOptions = {
+        from: config.email_user, // Sender address
+        to, // Recipient address
+        subject, // Email subject
+        text, // Email body
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+
+module.exports = sendEmail;const authService = require('../services/authService');
+
+const signUp = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const { user, token } = await authService.signUp(email, password);
+        res.status(201).json({ user, token });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const { user, token } = await authService.login(email, password);
+        res.json({ user, token });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const generateOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const otp = await authService.generateOTP(email);
+        res.json({ otp });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const verifyOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const verified = await authService.verifyOTP(email, otp);
+        res.json({ verified });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const resetPasswordRequest = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const resetToken = await authService.resetPasswordRequest(email);
+        res.json({ resetToken });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { resetToken, newPassword } = req.body;
+        const user = await authService.resetPassword(resetToken, newPassword);
+        res.json({ user });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    signUp,
+    login,
+    generateOTP,
+    verifyOTP,
+    resetPasswordRequest,
+    resetPassword,
+};
+const { sequelize } = require('../config/db');
+const Users = require('./Users');
+const OTP = require('./OTP');
+const Token = require('./Token');
+const PasswordReset = require('./PasswordReset');
+
+// Define associations (if any)
+OTP.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
+Users.hasMany(OTP, { foreignKey: 'id' });
+
+Token.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
+Users.hasMany(Token, { foreignKey: 'id' });
+
+PasswordReset.belongsTo(Users, { foreignKey: 'id', onDelete: 'CASCADE' });
+Users.hasMany(PasswordReset, { foreignKey: 'id' });
+
+// Export models and sequelize
+module.exports = {
+    sequelize,
+    Users,
+    OTP,
+    Token,
+    PasswordReset,
+};
+// models/OTP.js
+const { DataTypes } = require('sequelize');
+const {sequelize} = require('../config/db');
+
+const OTP = sequelize.define('otp', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+    },
+    userid: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id',
+        },
+    },
+    otp: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+    },
+    verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+},{
+    tableName: 'otp',
+    
+});
+
+module.exports = OTP;
+// models/PasswordReset.js
+const { DataTypes } = require('sequelize');
+const {sequelize} = require('../config/db');
+
+const PasswordReset = sequelize.define('password_resets', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+    },
+    userid: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id',
+        },
+    },
+    resetToken: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+    },
+});
+
+module.exports = PasswordReset;
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db'); // Import the sequelize instance
+
+const Token = sequelize.define('tokens', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+    },
+    userid: {
+        type: DataTypes.UUID,
+        allowNull: false,
+    },
+    token: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
+    expiresAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+    },
+}, {
+    timestamps: true, // Adds createdAt and updatedAt fields
+    tableName: 'tokens', // Explicitly specify table name
+});
+
+module.exports = Token;
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db'); // Import the sequelize instance
+
+const Users = sequelize.define('users', {
+    id: {
+        type: DataTypes.UUID, // Use UUID for primary key
+        defaultValue: DataTypes.UUIDV4, // Automatically generate UUID v4
+        primaryKey: true,
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true, // Ensure emails are unique
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false, // Password is required
+    },
+}, {
+    timestamps: true, // Automatically adds `createdAt` and `updatedAt` fields
+    tableName: 'users', // Explicitly specify the table name
+});
+
+module.exports = Users;
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+
+router.post('/signup', authController.signUp);
+router.post('/login', authController.login);
+router.post('/generate-otp', authController.generateOTP);
+router.post('/verify-otp', authController.verifyOTP);
+router.post('/reset-password-request', authController.resetPasswordRequest);
+router.post('/reset-password', authController.resetPassword);
+
+module.exports = router;
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Users } = require('../models');
+const { Token } = require('../models');
+const { OTP } = require('../models');
+const { PasswordReset } = require('../models');
+const sendEmail = require('../config/nodemailer');
+
+// Generate JWT token
+const generateToken = (user) => {
+    const payload = { id: user.id, email: user.email };
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+// Sign up user
+const signUp = async (email, password) => {
+    console.log(1)
+    console.log(email)
+    const existingUser = await Users.findOne({ where: { email } });
+    console.log(2)
+    if (existingUser) throw new Error('User already exists');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await Users.create({ email, password: hashedPassword });
+
+    // Generate and send OTP for email verification
+    await generateOTP(email);
+
+    return { message: 'User created successfully. OTP sent for email verification.' };
+};
+
+
+// Login user
+const login = async (email, password) => {
+    const user = await Users.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) throw new Error('Invalid credentials');
+
+    const token = generateToken(user);
+    await Token.create({ userid: user.id, token, expiresAt: new Date(Date.now() + 3600 * 1000) });
+
+    return { user, token };
+};
+
+// OTP generation for email verification
+
+// OTP generation for email verification
+const generateOTP = async (email) => {
+    const user = await Users.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+    console.log(3)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // OTP expires in 15 minutes
+    console.log(4)
+    console.log(5,user.id)
+    const id = user.id
+    await OTP.create({ userid: id, otp, expiresAt: otpExpiresAt });
+    console.log(6)
+    // Send OTP via email
+    const subject = 'Your OTP for verification';
+    const text = `Your OTP is ${otp}. It is valid for 15 minutes.`;
+    await sendEmail(email, subject, text);
+    console.log(7)
+
+    return 'OTP sent to your email address'; // Response message
+};
+
+
+// Verify OTP
+const verifyOTP = async (email, otp) => {
+    const user = await Users.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+
+    const otpRecord = await OTP.findOne({ where: { userid: user.id, otp, verified: false } });
+    if (!otpRecord) throw new Error('Invalid OTP');
+
+    if (otpRecord.expiresAt < new Date()) throw new Error('OTP has expired');
+
+    otpRecord.verified = true;
+    await otpRecord.save();
+
+    return { message: 'OTP verified successfully' };
+};
+
+
+// Password reset request
+const resetPasswordRequest = async (email) => {
+    const user = await Users.findOne({ where: { email } });
+    if (!user) throw new Error('User not found');
+
+    const resetToken = Math.random().toString(36).substring(2);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Expires in 30 minutes
+
+    await PasswordReset.create({ userid: user.id, resetToken, expiresAt });
+
+    // Send reset token via email
+    const subject = 'Password Reset Request';
+    const text = `Your password reset token is ${resetToken}. It is valid for 30 minutes.`;
+    await sendEmail(email, subject, text);
+
+    return 'Password reset token sent to your email address';
+};
+
+
+// Reset password
+const resetPassword = async (resetToken, newPassword) => {
+    const resetRequest = await PasswordReset.findOne({ where: { resetToken } });
+    if (!resetRequest) throw new Error('Invalid reset token');
+    console.log(1.1)
+    if (resetRequest.expiresAt < new Date()) throw new Error('Reset token has expired');
+    console.log(1.2)
+    console.log(resetRequest.userid)
+    const user = await Users.findByPk(resetRequest.userid);
+    console.log(1.3)
+    console.log(user)
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log(1.4)
+    user.password = hashedPassword;
+    await user.save();
+
+    return user;
+};
+
+module.exports = {
+    signUp,
+    login,
+    generateOTP,
+    verifyOTP,
+    resetPasswordRequest,
+    resetPassword,
+};
+

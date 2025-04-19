@@ -1,9 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Users } = require('../models');
-const { Token } = require('../models');
-const { OTP } = require('../models');
-const { PasswordReset } = require('../models');
+const { Op } = require('sequelize');  // Add this import
+const { Users, Token, OTP, PasswordReset } = require('../models');
 const sendEmail = require('../config/nodemailer');
 
 // Generate JWT token
@@ -14,23 +12,30 @@ const generateToken = (user) => {
 
 // Sign up user
 const signUp = async (email, password) => {
-    console.log(1)
-    console.log(email)
     const existingUser = await Users.findOne({ where: { email } });
-    console.log(2)
     if (existingUser) throw new Error('User already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await Users.create({ email, password: hashedPassword });
+    const newUser = await Users.create({ 
+        email, 
+        password: hashedPassword,
+        isVerified: false
+    });
 
     // Generate and send OTP for email verification
     await generateOTP(email);
 
-    return { message: 'User created successfully. OTP sent for email verification.' };
+    return { 
+        message: 'User created successfully. OTP sent for email verification.',
+        user: {
+            id: newUser.id,
+            email: newUser.email,
+            isVerified: newUser.isVerified
+        }
+    };
 };
 
-
-// Login user
+//Login User
 const login = async (email, password) => {
     const user = await Users.findOne({ where: { email } });
     if (!user) throw new Error('User not found');
@@ -38,33 +43,79 @@ const login = async (email, password) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new Error('Invalid credentials');
 
-    const token = generateToken(user);
-    await Token.create({ userid: user.id, token, expiresAt: new Date(Date.now() + 3600 * 1000) });
+    if (!user.isVerified) {
+        throw new Error('Please verify your email address before logging in');
+    }
 
-    return { user, token };
+    // Remove expired tokens
+    await Token.destroy({ 
+        where: { 
+            userid: user.id, 
+            expiresAt: { [Op.lt]: new Date() } 
+        } 
+    });
+
+    const token = generateToken(user);
+    await Token.create({ 
+        userid: user.id, 
+        token, 
+        expiresAt: new Date(Date.now() + 3600 * 1000) 
+    });
+
+    return { 
+        user: { 
+            id: user.id, 
+            email: user.email, 
+            isVerified: user.isVerified 
+        }, 
+        token 
+    };
 };
 
-// OTP generation for email verification
 
 // OTP generation for email verification
 const generateOTP = async (email) => {
     const user = await Users.findOne({ where: { email } });
     if (!user) throw new Error('User not found');
-    console.log(3)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // OTP expires in 15 minutes
-    console.log(4)
-    console.log(5,user.id)
-    const id = user.id
-    await OTP.create({ userid: id, otp, expiresAt: otpExpiresAt });
-    console.log(6)
-    // Send OTP via email
-    const subject = 'Your OTP for verification';
-    const text = `Your OTP is ${otp}. It is valid for 15 minutes.`;
-    await sendEmail(email, subject, text);
-    console.log(7)
 
-    return 'OTP sent to your email address'; // Response message
+    const existingOTP = await OTP.findOne({ 
+        where: { 
+            userid: user.id,
+            verified: false 
+        } 
+    });
+    
+    if (existingOTP) throw new Error('An OTP has already been sent. Please wait before requesting another.');
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await OTP.create({ 
+        userid: user.id,
+        otp, 
+        expiresAt: otpExpiresAt 
+    });
+
+    // Send OTP via email
+    const emailOptions = {
+        to: email,
+        subject: 'Email Verification OTP',
+        html: `
+            <h1>Email Verification</h1>
+            <p>Your OTP for email verification is: <strong>${otp}</strong></p>
+            <p>This OTP will expire in 15 minutes.</p>
+        `
+    };
+
+    try {
+        await sendEmail(emailOptions);
+        console.log("OTP Sent to email:", email);
+        return 'OTP sent to your email address';
+    } catch (error) {
+        // If email fails, delete the OTP record
+        await OTP.destroy({ where: { userid: user.id, otp } });
+        throw new Error('Failed to send OTP email. Please try again.');
+    }
 };
 
 
@@ -81,7 +132,11 @@ const verifyOTP = async (email, otp) => {
     otpRecord.verified = true;
     await otpRecord.save();
 
-    return { message: 'OTP verified successfully' };
+    // Update user verification status
+    user.isVerified = true;
+    await user.save();
+
+    return { message: 'Email verified successfully' };
 };
 
 
@@ -91,37 +146,31 @@ const resetPasswordRequest = async (email) => {
     if (!user) throw new Error('User not found');
 
     const resetToken = Math.random().toString(36).substring(2);
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Expires in 30 minutes
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
-    await PasswordReset.create({ userid: user.id, resetToken, expiresAt });
-
-    // Send reset token via email
-    const subject = 'Password Reset Request';
-    const text = `Your password reset token is ${resetToken}. It is valid for 30 minutes.`;
-    await sendEmail(email, subject, text);
+    await PasswordReset.create({ id: user.id, resetToken: hashedToken, expiresAt });
 
     return 'Password reset token sent to your email address';
 };
 
 
-// Reset password
 const resetPassword = async (resetToken, newPassword) => {
-    const resetRequest = await PasswordReset.findOne({ where: { resetToken } });
-    if (!resetRequest) throw new Error('Invalid reset token');
-    console.log(1.1)
-    if (resetRequest.expiresAt < new Date()) throw new Error('Reset token has expired');
-    console.log(1.2)
-    console.log(resetRequest.userid)
-    const user = await Users.findByPk(resetRequest.userid);
-    console.log(1.3)
-    console.log(user)
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    console.log(1.4)
-    user.password = hashedPassword;
+    const resetRequests = await PasswordReset.findAll();
+    const validRequest = resetRequests.find(request => bcrypt.compareSync(resetToken, request.resetToken));
+    
+    if (!validRequest) throw new Error('Invalid reset token');
+    if (validRequest.expiresAt < new Date()) throw new Error('Reset token has expired');
+
+    const user = await Users.findByPk(validRequest.userid);
+    if (!user) throw new Error('User not found');
+
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    return user;
+    return { message: 'Password reset successfully' };
 };
+
 
 module.exports = {
     signUp,

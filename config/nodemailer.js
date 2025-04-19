@@ -1,27 +1,45 @@
 const nodemailer = require('nodemailer');
-const config = require('./config');
-// Configure the transporter with your email service credentials
+require('dotenv').config();
+
+// Add validation for environment variables
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    throw new Error('Email configuration is missing. Please check your .env file.');
+}
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use your email service (e.g., Gmail, Outlook, etc.)
+    service: 'gmail',
     auth: {
-        user: config.email_user, // Your email address
-        pass: config.email_password, // Your email password or app password
-    },
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    }
 });
 
-console.log(config.email_user,config.email_password)
+// Verify transporter configuration
+transporter.verify(function (error, success) {
+    if (error) {
+        console.error('SMTP configuration error:', error);
+    } else {
+        console.log('SMTP server is ready to send emails');
+    }
+});
 
-// Function to send email
-const sendEmail = async (to, subject, text) => {
-    const mailOptions = {
-        from: config.email_user, // Sender address
-        to, // Recipient address
-        subject, // Email subject
-        text, // Email body
-    };
+const sendEmail = async (options) => {
+    try {
+        const mailOptions = {
+            from: `"Mejo App" <${process.env.EMAIL_USER}>`,
+            to: options.to,
+            subject: options.subject,
+            html: options.html
+        };
 
-    await transporter.sendMail(mailOptions);
+        console.log("Attempting to send email to:", options.to);
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Email sent successfully:", info.messageId);
+        return info;
+    } catch (error) {
+        console.error("Error sending email:", error);
+        throw new Error(`Failed to send email: ${error.message}`);
+    }
 };
-
 
 module.exports = sendEmail;

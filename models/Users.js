@@ -11,11 +11,18 @@ const Users = sequelize.define('users', {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true, // Ensure emails are unique
+        validate: {
+            isEmail: true // Validate email format
+        }
     },
     password: {
         type: DataTypes.STRING,
         allowNull: false, // Password is required
     },
+    isVerified: {  // Add this field
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    }
 }, {
     timestamps: true, // Automatically adds `createdAt` and `updatedAt` fields
     tableName: 'users', // Explicitly specify the table name
