@@ -53,16 +53,24 @@ const updateText = async (req, res) => {
     try {
         const { content, title, tags } = req.body;
         const email = req.user.email;
+
+        if (!title && title !== '') {
+            return res.status(400).json({ message: 'Title is required' });
+        }
+
         const updatedText = await userTextService.updateUserText(
             req.params.id,
             email,
             { content, title, tags }
         );
+
         if (!updatedText) {
             return res.status(404).json({ message: 'Text not found' });
         }
+
         res.json(updatedText);
     } catch (error) {
+        console.error('Error updating text:', error);
         res.status(500).json({ message: error.message });
     }
 };

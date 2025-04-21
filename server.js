@@ -13,7 +13,7 @@ const startServer = async () => {
         console.log('MongoDB connected successfully');
 
         // Sync PostgreSQL with force:true to create tables
-        await sequelize.sync({ force: true });
+        await sequelize.sync({ alter: true });
         console.log('PostgreSQL tables created successfully');
 
         // Start server

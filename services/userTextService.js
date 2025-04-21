@@ -26,12 +26,17 @@ const getUserText = async (textId, email) => {
 };
 
 // Update text
-const updateUserText = async (textId, email, updates) => {
-    return await UserText.findOneAndUpdate(
-        { _id: textId, email },
-        { $set: updates },
-        { new: true }
-    ).populate('userProfileId', 'firstName lastName');
+const updateUserText = async (id, email, updates) => {
+    try {
+        const text = await UserText.findOneAndUpdate(
+            { _id: id, email: email },
+            { $set: updates },
+            { new: true, runValidators: true }
+        );
+        return text;
+    } catch (error) {
+        throw new Error(`Error updating text: ${error.message}`);
+    }
 };
 
 // Delete text
