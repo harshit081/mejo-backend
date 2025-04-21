@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const config = require("./config");
+
 // Create a Sequelize instance and connect to PostgreSQL
 const sequelize = new Sequelize(
     config.db.name, // Database name
@@ -7,12 +8,14 @@ const sequelize = new Sequelize(
     config.db.password, // Database password
     {
         host: config.db.host, // Host (usually localhost)
+        port: config.db.port || 5432, // Add port
         dialect: "postgres", // Database type
         logging: false, //
     }
 );
 
 console.log("here", config);
+
 // Test the connection
 sequelize
     .authenticate()
@@ -22,7 +25,5 @@ sequelize
     .catch((error) => {
         console.error("Unable to connect to the database:", error);
     });
-
-
 
 module.exports = { sequelize };

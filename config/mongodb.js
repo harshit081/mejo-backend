@@ -4,8 +4,8 @@ const config = require('./config');
 const connectMongo = async () => {
     try {
         await mongoose.connect(config.mongodb.uri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+            // Remove deprecated options
+            // useNewUrlParser and useUnifiedTopology are no longer needed
         });
         console.log('MongoDB connection established successfully.');
     } catch (error) {

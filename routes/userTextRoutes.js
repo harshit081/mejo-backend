@@ -14,6 +14,7 @@ router.get('/:id', auth, userTextController.getTextById);
 
 // Update text
 router.put('/:id', auth, userTextController.updateText);
+ 
 
 // Delete text
 router.delete('/:id', auth, userTextController.deleteText);

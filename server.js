@@ -6,15 +6,24 @@ require('dotenv').config();
 const config = require('./config/config');
 const PORT = config.port || 5000;
 
-// Connect to both databases with force sync for PostgreSQL
-Promise.all([
-    sequelize.sync({ force: true }), // This will drop and recreate all tables
-    connectMongo()
-]).then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}).catch(error => {
-    console.error('Error during initialization:', error);
-    process.exit(1);
-});
+const startServer = async () => {
+    try {
+        // Connect to MongoDB
+        await connectMongo();
+        console.log('MongoDB connected successfully');
+
+        // Sync PostgreSQL with force:true to create tables
+        await sequelize.sync({ force: true });
+        console.log('PostgreSQL tables created successfully');
+
+        // Start server
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

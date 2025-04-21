@@ -4,8 +4,7 @@ const userProfileSchema = new mongoose.Schema({
     userId: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
     },
     email: {
         type: String,
@@ -13,7 +12,6 @@ const userProfileSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        index: true,
         validate: {
             validator: function(v) {
                 return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
@@ -76,10 +74,10 @@ const userProfileSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Add indexes for better query performance
-userProfileSchema.index({ userId: 1 });
-userProfileSchema.index({ 'address.city': 1, 'address.country': 1 });
-userProfileSchema.index({ userId: 1, email: 1 });
+// Define all indexes in one place
+userProfileSchema.index({ userId: 1 }); // Single index on userId
+userProfileSchema.index({ 'address.city': 1, 'address.country': 1 }); // Compound index for address
+userProfileSchema.index({ userId: 1, email: 1 }); // Compound index if needed
 
 // Virtual field for full name
 userProfileSchema.virtual('fullName').get(function() {
