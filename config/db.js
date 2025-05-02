@@ -1,42 +1,35 @@
 const { Sequelize } = require("sequelize");
 const config = require("./config");
 
-let sequelize;
+let sequelize = null;
 
 try {
-  // Check if connectionString exists and is valid
-  if (!config.db || !config.db.connectionString) {
-    console.warn('PostgreSQL connection string not provided');
-    sequelize = null;
-  } else {
-    // Create a singleton pattern to reuse connection
-    if (!global.sequelize) {
-      global.sequelize = new Sequelize(config.db.connectionString, {
-        dialect: "postgres",
-        logging: false,
-        dialectOptions: {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false,
-          },
+  if (config.db && config.db.connectionString) {
+    sequelize = new Sequelize(config.db.connectionString, {
+      dialect: "postgres",
+      logging: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
         },
-        pool: {
-          max: 2, // Reduce connection pool for serverless
-          min: 0,
-          acquire: 30000,
-          idle: 10000
-        },
-        retry: {
-          max: 3 // Retry connection up to 3 times
-        }
-      });
-    }
-
-    sequelize = global.sequelize;
+      },
+      pool: {
+        max: 2,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+      }
+    });
+    
+    // Test the connection but don't block app startup
+    sequelize.authenticate()
+      .then(() => console.log('PostgreSQL connection successful'))
+      .catch(err => console.error('PostgreSQL connection error:', err));
   }
 } catch (error) {
-  console.error("PostgreSQL initialization error:", error);
-  sequelize = null;
+  console.error("PostgreSQL setup error:", error);
+  // Don't crash the app if database setup fails
 }
 
 module.exports = { sequelize };

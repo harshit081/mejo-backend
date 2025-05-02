@@ -16,6 +16,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Request logger middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/usertext', userTextRoutes);
@@ -30,12 +36,12 @@ app.get('/', (req, res) => {
   res.status(200).send('Mejo API is running');
 });
 
-// Global error handler - ADD THIS
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error('Global error handler caught:', err);
+  console.error('Server error:', err);
   res.status(500).json({ 
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    error: 'Server error', 
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message 
   });
 });
 
