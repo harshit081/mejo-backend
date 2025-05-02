@@ -1,12 +1,11 @@
-console.log('Starting server...');
-console.log('Node environment:', process.env.NODE_ENV);
-console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
-console.log('PostgreSQL connection string exists:', !!process.env.POSTGRES_SUPABASE_CONNECT_URL);
 
+require('dotenv').config();
 const app = require('./app');
+
 const { sequelize } = require('./config/db');
 const { connectMongo } = require('./config/mongodb');
-require('dotenv').config();
+
+console.log('Starting server...');
 
 const PORT = process.env.PORT || 5000;
 
