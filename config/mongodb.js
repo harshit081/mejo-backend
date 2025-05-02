@@ -5,20 +5,31 @@ const config = require('./config');
 let isConnected = false;
 
 const connectMongo = async () => {
-  // Don't reconnect if already connected
+  // Skip if already connected
   if (isConnected) {
-    return;
+    return Promise.resolve();
+  }
+  
+  // Skip if no URI is provided
+  if (!config.mongodb || !config.mongodb.uri) {
+    console.warn('MongoDB URI not provided, skipping connection');
+    return Promise.resolve();
   }
   
   try {
-    const db = await mongoose.connect(config.mongodb.uri, {
-      serverSelectionTimeoutMS: 10000 // Timeout after 10s instead of 30s
-    });
+    const options = {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    };
+    
+    await mongoose.connect(config.mongodb.uri, options);
     isConnected = true;
-    return db;
+    return Promise.resolve();
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
+    console.error('MongoDB connection failed:', error.message);
+    // Don't reject the promise, let the app continue
+    return Promise.resolve();
   }
 };
 

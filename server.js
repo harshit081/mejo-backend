@@ -3,37 +3,55 @@ const { sequelize } = require('./config/db');
 const { connectMongo } = require('./config/mongodb');
 require('dotenv').config();
 
-const config = require('./config/config');
-const PORT = config.port || 5000;
+const PORT = process.env.PORT || 5000;
 
-// Initialize database connections on cold start
-let mongoConnected = false;
-let postgresConnected = false;
+// Flag to track database connection attempts
+let mongoAttempted = false;
+let postgresAttempted = false;
 
-const initDatabases = async () => {
-  if (!mongoConnected) {
-    try {
-      await connectMongo();
-      mongoConnected = true;
-      console.log('MongoDB connected successfully');
-    } catch (error) {
-      console.error('MongoDB connection error:', error);
+const initDatabases = async (req, res, next) => {
+  try {
+    // Only attempt Mongo connection once
+    if (!mongoAttempted) {
+      mongoAttempted = true;
+      try {
+        await connectMongo();
+        console.log('MongoDB connected');
+      } catch (error) {
+        console.error('MongoDB connection error:', error.message);
+        // Continue even if MongoDB fails
+      }
     }
-  }
-  
-  if (!postgresConnected) {
-    try {
-      await sequelize.authenticate();
-      postgresConnected = true;
-      console.log('PostgreSQL connection established successfully.');
-    } catch (error) {
-      console.error('PostgreSQL connection error:', error);
+    
+    // Only attempt Postgres connection once
+    if (!postgresAttempted) {
+      postgresAttempted = true;
+      try {
+        await sequelize.authenticate();
+        console.log('PostgreSQL connected');
+      } catch (error) {
+        console.error('PostgreSQL connection error:', error.message);
+        // Continue even if PostgreSQL fails
+      }
     }
+    
+    // Always proceed to the next middleware
+    if (next) next();
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    if (next) next(error);
   }
 };
 
-// Initialize databases on cold start
-initDatabases();
+// Initialize databases on startup, but don't block the app from starting
+initDatabases().catch(err => {
+  console.error('Failed to initialize databases:', err);
+});
+
+// Add middleware to ensure DB connection attempt before handling requests
+app.use((req, res, next) => {
+  initDatabases(req, res, next);
+});
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {

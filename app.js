@@ -30,4 +30,13 @@ app.get('/', (req, res) => {
   res.status(200).send('Mejo API is running');
 });
 
+// Global error handler - ADD THIS
+app.use((err, req, res, next) => {
+  console.error('Global error handler caught:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
 module.exports = app;
