@@ -1,5 +1,5 @@
 require('dotenv').config();
-console.log(process.env.DB_HOST)
+
 module.exports = {
     email_user: process.env.EMAIL_USER,
     email_password: process.env.EMAIL_PASSWORD,

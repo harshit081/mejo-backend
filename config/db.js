@@ -13,8 +13,6 @@ const sequelize = new Sequelize(config.db.connectionString, {
     },
 });
 
-console.log("here", config);
-
 // Test the connection
 sequelize
     .authenticate()

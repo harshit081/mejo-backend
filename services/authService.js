@@ -15,16 +15,13 @@ const generateToken = (user) => {
 const signUp = async (email, password) => {
     const existingUser = await Users.findOne({ where: { email } });
     if (existingUser) throw new Error('User already exists');
-    console.log("signup",2)
-    console.log("signup",3, email, password)
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await Users.create({ 
         email, 
         password: hashedPassword,
         isVerified: false
     });
-    console.log("signup",4)
-    console.log("signup",5, newUser.id, email, password)
     
     // Create initial UserProfile in MongoDB
     try {
@@ -45,7 +42,6 @@ const signUp = async (email, password) => {
             },
             bio: null
         });
-        console.log("signup",6, newUser.id, email, password)
     } catch (error) {
         // If MongoDB profile creation fails, delete the PostgreSQL user
         await newUser.destroy();
