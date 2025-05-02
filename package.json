@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "vercel-build": "echo 'Building...'"
+    "vercel-build": "npm install pg pg-hstore && echo 'Building...'"
   },
   "keywords": [],
   "author": "",
