@@ -6,9 +6,13 @@ const profileRoutes = require('./routes/profileRoutes');
 
 const app = express();
 
-// Simplified CORS configuration
+// CORS configuration
 app.use(cors({
-  origin: ['https://mejo.vercel.app', 'https://mejo-frontend.vercel.app', 'http://localhost:3000'],
+  origin: [
+    'https://mejo.vercel.app', 
+    'https://mejo-frontend.vercel.app',
+    'http://localhost:3000'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -16,7 +20,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Request logger middleware
+// Simple request logger
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
