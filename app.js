@@ -6,32 +6,14 @@ const profileRoutes = require('./routes/profileRoutes');
 
 const app = express();
 
-// CORS configuration with multiple allowed origins
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      'https://mejo.vercel.app', 
-      'https://mejo-frontend.vercel.app',
-      'http://localhost:3000'  // Allow local development
-    ];
-    
-    // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy violation'));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+// Simplified CORS configuration
+app.use(cors({
+  origin: ['https://mejo.vercel.app', 'https://mejo-frontend.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-};
+}));
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
