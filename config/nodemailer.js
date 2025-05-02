@@ -1,31 +1,29 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Add validation for environment variables
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    throw new Error('Email configuration is missing. Please check your .env file.');
-}
+let transporter = null;
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    }
-});
-
-// Only verify connection in development environment
-if (process.env.NODE_ENV !== 'production') {
-    transporter.verify(function (error, success) {
-        if (error) {
-            console.error('SMTP configuration error:', error);
-        } else {
-            console.log('SMTP server is ready to send emails');
+// Create transporter only if credentials exist
+if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
         }
     });
 }
 
 const sendEmail = async (options) => {
+    // If transporter wasn't configured, log error but don't crash
+    if (!transporter) {
+        console.error("Email not sent: Email configuration missing");
+        return { 
+            error: true, 
+            message: "Email service not configured" 
+        };
+    }
+
     try {
         const mailOptions = {
             from: `"Mejo App" <${process.env.EMAIL_USER}>`,
@@ -38,7 +36,10 @@ const sendEmail = async (options) => {
         return info;
     } catch (error) {
         console.error("Error sending email:", error);
-        throw new Error(`Failed to send email: ${error.message}`);
+        return { 
+            error: true, 
+            message: `Failed to send email: ${error.message}` 
+        };
     }
 };
 
