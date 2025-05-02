@@ -1,4 +1,8 @@
 # Add this to your .gitignore file
+node_modules/
 .env
-/node_modules
+.env.local
+.env.development
+.env.production
+.DS_Store
 .vercel

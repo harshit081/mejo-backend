@@ -1,68 +1,30 @@
-
 require('dotenv').config();
 const app = require('./app');
-
 const { sequelize } = require('./config/db');
 const { connectMongo } = require('./config/mongodb');
 
-console.log('Starting server...');
+const PORT = process.env.PORT || 5000; // Glitch often uses port 3000
 
-const PORT = process.env.PORT || 5000;
-
-// Flag to track database connection attempts
-let mongoAttempted = false;
-let postgresAttempted = false;
-
-const initDatabases = async (req, res, next) => {
+// Simple startup sequence
+const startServer = async () => {
   try {
-    // Only attempt Mongo connection once
-    if (!mongoAttempted) {
-      mongoAttempted = true;
-      try {
-        await connectMongo();
-        console.log('MongoDB connected');
-      } catch (error) {
-        console.error('MongoDB connection error:', error.message);
-        // Continue even if MongoDB fails
-      }
-    }
+    // Connect to MongoDB
+    await connectMongo();
+    console.log('MongoDB connected successfully');
     
-    // Only attempt Postgres connection once
-    if (!postgresAttempted) {
-      postgresAttempted = true;
-      try {
-        await sequelize.authenticate();
-        console.log('PostgreSQL connected');
-      } catch (error) {
-        console.error('PostgreSQL connection error:', error.message);
-        // Continue even if PostgreSQL fails
-      }
-    }
+    // Connect to PostgreSQL
+    await sequelize.authenticate();
+    console.log('PostgreSQL connected successfully');
     
-    // Always proceed to the next middleware
-    if (next) next();
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
   } catch (error) {
-    console.error('Database initialization error:', error);
-    if (next) next(error);
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
 };
 
-// Initialize databases on startup, but don't block the app from starting
-initDatabases().catch(err => {
-  console.error('Failed to initialize databases:', err);
-});
-
-// Add middleware to ensure DB connection attempt before handling requests
-app.use((req, res, next) => {
-  initDatabases(req, res, next);
-});
-
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
-
-// Export the Express API for Vercel
-module.exports = app;
+// Start the server
+startServer();
