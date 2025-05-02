@@ -2,17 +2,16 @@ const { Sequelize } = require("sequelize");
 const config = require("./config");
 
 // Create a Sequelize instance and connect to PostgreSQL
-const sequelize = new Sequelize(
-    config.db.name, // Database name
-    config.db.user, // Database user
-    config.db.password, // Database password
-    {
-        host: config.db.host, // Host (usually localhost)
-        port: config.db.port || 5432, // Add port
-        dialect: "postgres", // Database type
-        logging: false, //
-    }
-);
+const sequelize = new Sequelize(config.db.connectionString, {
+    dialect: "postgres",
+    logging: false,
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false,
+        },
+    },
+});
 
 console.log("here", config);
 

@@ -4,10 +4,7 @@ module.exports = {
     email_user: process.env.EMAIL_USER,
     email_password: process.env.EMAIL_PASSWORD,
     db: {
-        name: process.env.DB_NAME,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
+        connectionString: process.env.POSTGRES_SUPABASE_CONNECT_URL,
     },
     jwtSecret: process.env.JWT_SECRET,
     port: process.env.PORT || 5000,
