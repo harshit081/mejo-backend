@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-console.log("Auth Routes Loaded");
 router.post('/signup', authController.signUp);
 router.post('/login', authController.login);
 router.post('/generate-otp', authController.generateOTP);

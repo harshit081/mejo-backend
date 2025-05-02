@@ -4,13 +4,14 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userTextRoutes = require('./routes/userTextRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const { sequelize } = require('./config/db');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration with environment-specific origins
 const corsOptions = {
-    origin: "http://localhost:3000",
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://your-frontend-domain.vercel.app'] // Update with your frontend URL
+      : "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
@@ -23,5 +24,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/usertext', userTextRoutes);
 app.use('/api/profile', profileRoutes);
+
+// Health check route for Vercel
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
 
 module.exports = app;
