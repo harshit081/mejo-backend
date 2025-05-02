@@ -1,26 +1,28 @@
 const { Sequelize } = require("sequelize");
 const config = require("./config");
 
-// Create a Sequelize instance and connect to PostgreSQL
-const sequelize = new Sequelize(config.db.connectionString, {
+let sequelize;
+
+// Create a singleton pattern to reuse connection
+if (!global.sequelize) {
+  global.sequelize = new Sequelize(config.db.connectionString, {
     dialect: "postgres",
     logging: false,
     dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false,
-        },
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
     },
-});
+    pool: {
+      max: 2, // Reduce connection pool for serverless
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  });
+}
 
-// Test the connection
-sequelize
-    .authenticate()
-    .then(() => {
-        console.log("Database connection established successfully.");
-    })
-    .catch((error) => {
-        console.error("Unable to connect to the database:", error);
-    });
+sequelize = global.sequelize;
 
 module.exports = { sequelize };

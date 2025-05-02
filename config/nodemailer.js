@@ -14,14 +14,16 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Verify transporter configuration
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error('SMTP configuration error:', error);
-    } else {
-        console.log('SMTP server is ready to send emails');
-    }
-});
+// Only verify connection in development environment
+if (process.env.NODE_ENV !== 'production') {
+    transporter.verify(function (error, success) {
+        if (error) {
+            console.error('SMTP configuration error:', error);
+        } else {
+            console.log('SMTP server is ready to send emails');
+        }
+    });
+}
 
 const sendEmail = async (options) => {
     try {
@@ -32,9 +34,7 @@ const sendEmail = async (options) => {
             html: options.html
         };
 
-        console.log("Attempting to send email to:", options.to);
         const info = await transporter.sendMail(mailOptions);
-        console.log("Email sent successfully:", info.messageId);
         return info;
     } catch (error) {
         console.error("Error sending email:", error);
