@@ -14,8 +14,60 @@ const generateToken = (user) => {
 // Sign up user
 const signUp = async (email, password) => {
     const existingUser = await Users.findOne({ where: { email } });
-    if (existingUser) throw new Error('User already exists');
     
+    // If user exists and is verified, throw error
+    if (existingUser && existingUser.isVerified) {
+        throw new Error('User already exists and is verified. Please login instead.');
+    }
+    
+    // If user exists but not verified, allow re-signup
+    if (existingUser && !existingUser.isVerified) {
+        // Update password in case they want to change it
+        const hashedPassword = await bcrypt.hash(password, 10);
+        existingUser.password = hashedPassword;
+        await existingUser.save();
+        
+        // Check if MongoDB profile exists, create if not
+        try {
+            const existingProfile = await UserProfile.findOne({ userId: existingUser.id });
+            if (!existingProfile) {
+                await UserProfile.create({
+                    userId: existingUser.id,
+                    email: email.toLowerCase(),
+                    firstName: null,
+                    lastName: null,
+                    dateOfBirth: null,
+                    gender: 'prefer not to say',
+                    phoneNumber: null,
+                    address: {
+                        street: null,
+                        city: null,
+                        state: null,
+                        country: null,
+                        zipCode: null
+                    },
+                    bio: null
+                });
+            }
+        } catch (error) {
+            console.warn(`Failed to create/check MongoDB profile for re-signup: ${error.message}`);
+            // Continue execution - don't fail re-signup if MongoDB profile fails
+        }
+        
+        // Generate new OTP
+        await generateOTP(existingUser.id, email);
+        
+        return { 
+            message: 'Account exists but not verified. New verification code sent to your email.',
+            user: {
+                id: existingUser.id,
+                email: existingUser.email,
+                isVerified: existingUser.isVerified
+            }
+        };
+    }
+    
+    // Create new user if doesn't exist
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await Users.create({ 
         email, 
@@ -49,7 +101,7 @@ const signUp = async (email, password) => {
     }
 
     // Generate and send OTP for email verification
-    await generateOTP(email);
+    await generateOTP(newUser.id, email);
 
     return { 
         message: 'User created successfully. OTP sent for email verification.',
@@ -98,9 +150,33 @@ const login = async (email, password) => {
     };
 };
 
+// Resend OTP for unverified users
+const resendOTP = async (email) => {
+    const user = await Users.findOne({ where: { email } });
+    if (!user) {
+        throw new Error('User not found');
+    }
+    
+    if (user.isVerified) {
+        throw new Error('User is already verified');
+    }
+    
+    // Generate new OTP
+    await generateOTP(user.id, email);
+    
+    return { 
+        message: 'New verification code sent to your email.',
+        user: {
+            id: user.id,
+            email: user.email,
+            isVerified: user.isVerified
+        }
+    };
+};
+
 
 // OTP generation for email verification
-const generateOTP = async (email) => {
+const generateOTP = async (userId, email) => {
     // Generate OTP code
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date();
@@ -108,7 +184,7 @@ const generateOTP = async (email) => {
     
     // Store in database
     await OTP.upsert({
-        email,
+        userid: userId,
         otp,
         expiresAt
     });
@@ -164,7 +240,29 @@ const resetPasswordRequest = async (email) => {
     const hashedToken = await bcrypt.hash(resetToken, 10);
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
-    await PasswordReset.create({ id: user.id, resetToken: hashedToken, expiresAt });
+    await PasswordReset.create({ userid: user.id, resetToken: hashedToken, expiresAt });
+
+    // Send reset token via email
+    try {
+        const emailResult = await sendEmail({
+            to: email,
+            subject: "Password Reset Request",
+            html: `
+                <h2>Password Reset Request</h2>
+                <p>You have requested to reset your password for your Mejo account.</p>
+                <p>Your reset token is: <strong>${resetToken}</strong></p>
+                <p>This token will expire in 30 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            `
+        });
+        
+        if (emailResult.error) {
+            console.warn(`Password reset email could not be sent to ${email}: ${emailResult.message}`);
+        }
+    } catch (error) {
+        console.warn(`Failed to send password reset email: ${error.message}`);
+        // Continue execution - don't fail the request if email fails
+    }
 
     return 'Password reset token sent to your email address';
 };
@@ -187,11 +285,18 @@ const resetPassword = async (resetToken, newPassword) => {
 };
 
 
+// Helper function to find user by email
+const findUserByEmail = async (email) => {
+    return await Users.findOne({ where: { email } });
+};
+
 module.exports = {
     signUp,
     login,
     generateOTP,
     verifyOTP,
+    resendOTP,
     resetPasswordRequest,
     resetPassword,
+    findUserByEmail,
 };

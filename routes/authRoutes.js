@@ -6,6 +6,7 @@ router.post('/signup', authController.signUp);
 router.post('/login', authController.login);
 router.post('/generate-otp', authController.generateOTP);
 router.post('/verify-otp', authController.verifyOTP);
+router.post('/resend-otp', authController.resendOTP);
 router.post('/reset-password-request', authController.resetPasswordRequest);
 router.post('/reset-password', authController.resetPassword);
 
