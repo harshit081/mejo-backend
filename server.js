@@ -11,7 +11,7 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectMongo();
     console.log('MongoDB connected successfully');
-    
+    // { force: true }
     // Connect to PostgreSQL
     await sequelize.authenticate();
     console.log('PostgreSQL connected successfully');

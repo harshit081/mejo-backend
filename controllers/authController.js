@@ -49,9 +49,21 @@ const login = async (req, res, next) => {
 const generateOTP = async (req, res) => {
     try {
         const { email } = req.body;
-        const otp = await authService.generateOTP(email);
-        res.json({ otp });
+        
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+        
+        // First find the user
+        const user = await authService.findUserByEmail(email);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const result = await authService.generateOTP(user.id, email);
+        res.json(result);
     } catch (error) {
+        console.error('Generate OTP error:', error);
         res.status(400).json({ message: error.message });
     }
 };
@@ -63,6 +75,31 @@ const verifyOTP = async (req, res) => {
         res.json({ verified });
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+
+const resendOTP = async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+        
+        const result = await authService.resendOTP(email);
+        res.json(result);
+    } catch (error) {
+        console.error('Resend OTP error:', error);
+        
+        if (error.message === 'User not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        
+        if (error.message === 'User is already verified') {
+            return res.status(400).json({ message: error.message });
+        }
+        
+        res.status(500).json({ message: 'Failed to resend verification code' });
     }
 };
 
@@ -91,6 +128,7 @@ module.exports = {
     login,
     generateOTP,
     verifyOTP,
+    resendOTP,
     resetPasswordRequest,
     resetPassword,
 };
