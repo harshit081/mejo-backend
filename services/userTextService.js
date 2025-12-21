@@ -1,13 +1,14 @@
 const UserText = require('../models/mongo/UserText');
 
 // Create new text
-const createUserText = async (email, userProfileId, content, title, tags) => {
+const createUserText = async (email, userProfileId, content, title, tags, mood) => {
     const text = new UserText({
         email,
         userProfileId,
         content,
         title: title || 'Untitled',
-        tags: tags || []
+        tags: tags || [],
+        mood: mood || 'neutral'
     });
     return await text.save();
 };
@@ -28,9 +29,15 @@ const getUserText = async (textId, email) => {
 // Update text
 const updateUserText = async (id, email, updates) => {
     try {
+        const sanitizedUpdates = { ...updates };
+
+        if (!sanitizedUpdates.mood) {
+            delete sanitizedUpdates.mood;
+        }
+
         const text = await UserText.findOneAndUpdate(
             { _id: id, email: email },
-            { $set: updates },
+            { $set: sanitizedUpdates },
             { new: true, runValidators: true }
         );
         return text;

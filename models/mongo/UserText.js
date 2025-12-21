@@ -21,6 +21,11 @@ const userTextSchema = new mongoose.Schema({
         type: String,
         default: 'Untitled'
     },
+    mood: {
+        type: String,
+        enum: ['joyful', 'grateful', 'calm', 'neutral', 'tired', 'stressed', 'sad', 'excited'],
+        default: 'neutral'
+    },
     tags: [{
         type: String
     }]

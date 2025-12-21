@@ -3,7 +3,7 @@ const UserProfile = require('../models/mongo/UserProfile');
 
 const createText = async (req, res) => {
     try {
-        const { content, title, tags } = req.body;
+        const { content, title, tags, mood } = req.body;
         const email = req.user.email;
 
         // Get UserProfile ID
@@ -17,7 +17,8 @@ const createText = async (req, res) => {
             userProfile._id,
             content,
             title,
-            tags
+            tags,
+            mood
         );
 
         res.status(201).json(savedText);
@@ -51,7 +52,7 @@ const getTextById = async (req, res) => {
 
 const updateText = async (req, res) => {
     try {
-        const { content, title, tags } = req.body;
+        const { content, title, tags, mood } = req.body;
         const email = req.user.email;
 
         if (!title && title !== '') {
@@ -61,7 +62,7 @@ const updateText = async (req, res) => {
         const updatedText = await userTextService.updateUserText(
             req.params.id,
             email,
-            { content, title, tags }
+            { content, title, tags, mood }
         );
 
         if (!updatedText) {
