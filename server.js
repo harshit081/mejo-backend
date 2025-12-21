@@ -3,7 +3,7 @@ const app = require('./app');
 const { sequelize } = require('./config/db');
 const { connectMongo } = require('./config/mongodb');
 
-const PORT = process.env.PORT || 5000; // Glitch often uses port 3000
+const PORT = process.env.PORT || 5000;
 
 // Simple startup sequence
 const startServer = async () => {
